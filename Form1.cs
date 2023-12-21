@@ -13,15 +13,31 @@ namespace Blockchain {
         private Socket connectToServerSocket;
         private List<Socket> connectedClients = new List<Socket>();
         private List<Socket> serversConnectedTo = new List<Socket>();
+        private Blockchain blockchain;
 
         private async void btn_connect_network_Click(object sender, EventArgs e) {
-            var ipEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), GetAvailablePort());
-            serverSocket = new Socket(ipEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            serverSocket.Bind(ipEndPoint);
-            serverSocket.Listen(10);
+            if(tbx_node_name.Text.Length == 0) {
+                MessageBox.Show("Must enter node name!");
+                return;
+            }
 
+            blockchain = new Blockchain(tbx_node_name.Text);
+
+            try {
+                var ipEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), GetAvailablePort());
+                serverSocket = new Socket(ipEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                serverSocket.Bind(ipEndPoint);
+                serverSocket.Listen(10);
+            } catch(Exception ex) {
+                MessageBox.Show($"{ex.Message}\n{ex.StackTrace}");
+                return;
+            }
+
+            btn_connect_network.Enabled = false;
             lbl_status.Text = $"Online: PORT {serverSocket?.LocalEndPoint?.ToString()?.Split(':')[1]}";
             //MessageBox.Show($"local: {hostSocket?.LocalEndPoint}");
+
+
 
             while(true) {
                 try {
@@ -39,13 +55,7 @@ namespace Blockchain {
         }
 
 
-        private static void AppendText(RichTextBox box, string text, Color color) {
-            box.SelectionStart = box.TextLength;
-            box.SelectionLength = 0;
-            box.SelectionColor = color;
-            box.AppendText(text);
-            box.SelectionColor = box.ForeColor;
-        }
+
 
         private async Task HandleClients(Socket client) {
             while(true) {
@@ -127,6 +137,11 @@ namespace Blockchain {
 
             var ipEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), Convert.ToInt32(tbx_port.Text));
             connectToServerSocket = new Socket(new IPEndPoint(IPAddress.Parse("127.0.0.1"), GetAvailablePort()).AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+            if(serversConnectedTo.Contains(connectToServerSocket)) {
+                MessageBox.Show($"Already connected to 127.0.0.1:{tbx_port.Text}");
+                return;
+            }
             serversConnectedTo.Add(connectToServerSocket);
             try {
                 await Task.Run(async () => {
@@ -169,5 +184,86 @@ namespace Blockchain {
                 return Array.Empty<byte>();
             }
         }
+
+        private async void btn_mine_Click(object sender, EventArgs e) {
+            await Task.Run(() => MineBlock());
+        }
+
+        private void MineBlock() {
+            uint nonce = 0;
+            uint check = 100_000;
+            uint diff = 2;
+            int i = 0;
+            var data = "Test dummy data";
+            bool skip;
+            var startTime = DateTime.Now;
+            while(true) {
+                i++;
+                nonce++;
+                skip = false;
+                var previousHash = blockchain.Blocks.Count == 0 ?
+                    Array.Empty<byte>() : blockchain.Blocks[blockchain.Blocks.Count - 1].Hash;
+                var timestamp = DateTime.Now;
+                var strData = $"{blockchain.Blocks.Count}{timestamp}{data}{previousHash}{diff}{nonce}";
+                var byteData = Encoding.UTF8.GetBytes(strData);
+                var hash = Utils.ComputeHash(byteData);
+
+                for(int k = 0; k < diff; k++) {
+                    if(hash[k] != 0) {
+                        skip = true;
+                        break;
+                    }
+                }
+
+                if(i == check) {
+                    i = 0;
+                    AppendText(rtb_mining, $"\n{Utils.GetHexString(hash)}\n", Color.Red);
+                }
+
+                if(skip)
+                    continue;
+
+                var elapsedTime = DateTime.Now - startTime;
+
+                AppendText(rtb_mining, $"\n{Utils.GetHexString(hash)}\n", Color.Green);
+                var block = new Block(
+                    index: blockchain.Blocks.Count,
+                    timestamp: timestamp,
+                    data: Encoding.UTF8.GetBytes(data),
+                    hash: hash,
+                    previousHash: previousHash,
+                    difficulty: diff,
+                    nonce: nonce,
+                    miner: blockchain.Name);
+
+                if(elapsedTime.TotalSeconds < 1) {
+                    diff++;
+                } else if(elapsedTime.TotalSeconds > 5) {
+                    diff--;
+                }
+                MessageBox.Show($"Diff: {diff}");
+
+                blockchain.Blocks.Add(block);
+                AppendText(rtb_ledger, $"\n{block}\n", Color.Green);
+
+                if(blockchain.Blocks.Count == 10)
+                    break;
+
+                nonce = 0;
+                startTime = DateTime.Now;
+            }
+        }
+
+        public void AppendText(RichTextBox box, string text, Color color) {
+            this.Invoke((MethodInvoker)delegate {
+                box.SelectionStart = box.TextLength;
+                box.SelectionLength = 0;
+                box.SelectionColor = color;
+                box.AppendText(text);
+                box.SelectionColor = box.ForeColor;
+                box.ScrollToCaret();
+            });
+        }
+
     }
 }

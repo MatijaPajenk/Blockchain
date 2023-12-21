@@ -1,16 +1,34 @@
-﻿namespace Blockchain {
-    internal class Block(uint index, DateTime timestamp, byte[] data, byte[] hash,
-                            byte[] previousHash, uint difficulty, uint nonce) {
-        public uint Index { get; set; } = index;
+﻿using System.Text;
+
+namespace Blockchain {
+    internal class Block(int index, DateTime timestamp, byte[] data, byte[] hash,
+                            byte[] previousHash, uint difficulty, uint nonce, string miner) {
+        public int Index { get; set; } = index;
         public DateTime Timestamp { get; set; } = timestamp;
         public byte[] Data { get; set; } = data;
         public byte[] Hash { get; set; } = hash;
         public byte[] PreviousHash { get; set; } = previousHash;
         public uint Difficulty { get; set; } = difficulty;
         public uint Nonce { get; set; } = nonce;
+        public string Miner { get; set; } = miner;
 
         public void Validate() {
             //TODO implement
+        }
+
+        public override string ToString() {
+            var res =
+                $"""
+                Index: {Index}
+                Data: {Encoding.UTF8.GetString(Data)}
+                Timestamp: {Timestamp}
+                Previous hash: {Utils.GetHexString(PreviousHash)}
+                Difficulty: {Difficulty}
+                Nonce: {Nonce}
+                Miner: {Miner}
+                Hash: {Utils.GetHexString(Hash)}
+                """;
+            return res;
         }
     }
 }

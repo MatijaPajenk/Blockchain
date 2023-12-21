@@ -84,7 +84,7 @@
             btn_connect_network.TabIndex = 4;
             btn_connect_network.Text = "Connect";
             btn_connect_network.UseVisualStyleBackColor = false;
-            btn_connect_network.Click +=  btn_connect_network_Click ;
+            btn_connect_network.Click += btn_connect_network_Click;
             // 
             // btn_mine
             // 
@@ -95,6 +95,7 @@
             btn_mine.TabIndex = 5;
             btn_mine.Text = "Mine";
             btn_mine.UseVisualStyleBackColor = true;
+            btn_mine.Click += btn_mine_Click;
             // 
             // tbx_port
             // 
@@ -113,7 +114,7 @@
             btn_connect_port.TabIndex = 7;
             btn_connect_port.Text = "Connect port";
             btn_connect_port.UseVisualStyleBackColor = true;
-            btn_connect_port.Click +=  btn_connect_port_Click ;
+            btn_connect_port.Click += btn_connect_port_Click;
             // 
             // rtb_ledger
             // 
@@ -156,11 +157,11 @@
             Controls.Add(tbx_node_name);
             Controls.Add(label2);
             Controls.Add(label1);
-            Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point,  0);
+            Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
             Margin = new Padding(4);
             Name = "Form1";
             Text = "Form1";
-            FormClosing +=  Form1_FormClosing ;
+            FormClosing += Form1_FormClosing;
             ResumeLayout(false);
             PerformLayout();
         }
