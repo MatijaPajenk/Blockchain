@@ -3,8 +3,8 @@ using System.Net.Sockets;
 using System.Text;
 
 namespace Blockchain {
-    public partial class Form1 : Form {
-        public Form1() {
+    public partial class NetChainer : Form {
+        public NetChainer() {
             InitializeComponent();
         }
 

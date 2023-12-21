@@ -1,5 +1,5 @@
 ﻿namespace Blockchain {
-    partial class Form1 {
+    partial class NetChainer {
         /// <summary>
         ///  Required designer variable.
         /// </summary>
@@ -141,7 +141,7 @@
             lbl_client.TabIndex = 10;
             lbl_client.Text = "Not connected";
             // 
-            // Form1
+            // NetChainer
             // 
             AutoScaleDimensions = new SizeF(9F, 21F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -159,8 +159,8 @@
             Controls.Add(label1);
             Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
             Margin = new Padding(4);
-            Name = "Form1";
-            Text = "Form1";
+            Name = "NetChainer";
+            Text = "NetChainer";
             FormClosing += Form1_FormClosing;
             ResumeLayout(false);
             PerformLayout();
