@@ -12,8 +12,8 @@ namespace Blockchain {
         public uint Nonce { get; set; } = nonce;
         public string Miner { get; set; } = miner;
 
-        public void Validate() {
-            //TODO implement
+        public string GetData() {
+            return Encoding.UTF8.GetString(Data);
         }
 
         public override string ToString() {
@@ -29,6 +29,10 @@ namespace Blockchain {
                 Hash: {Utils.GetHexString(Hash)}
                 """;
             return res;
+        }
+
+        public byte[] ToTransferByte() {
+            return Encoding.UTF8.GetBytes($"{Index}|{GetData()}|{Timestamp}|{Utils.GetHexString(PreviousHash)}|{Difficulty}|{Nonce}|{Miner}|{Utils.GetHexString(Hash)}");
         }
     }
 }

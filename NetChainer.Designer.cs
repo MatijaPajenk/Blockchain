@@ -42,7 +42,7 @@
             label1.Location = new Point(14, 27);
             label1.Margin = new Padding(4, 0, 4, 0);
             label1.Name = "label1";
-            label1.Size = new Size(94, 21);
+            label1.Size = new Size(118, 28);
             label1.TabIndex = 0;
             label1.Text = "Node name:";
             // 
@@ -52,7 +52,7 @@
             label2.Location = new Point(53, 60);
             label2.Margin = new Padding(4, 0, 4, 0);
             label2.Name = "label2";
-            label2.Size = new Size(55, 21);
+            label2.Size = new Size(69, 28);
             label2.TabIndex = 1;
             label2.Text = "Status:";
             // 
@@ -61,7 +61,7 @@
             tbx_node_name.Location = new Point(114, 22);
             tbx_node_name.Margin = new Padding(4);
             tbx_node_name.Name = "tbx_node_name";
-            tbx_node_name.Size = new Size(127, 29);
+            tbx_node_name.Size = new Size(127, 34);
             tbx_node_name.TabIndex = 2;
             // 
             // lbl_status
@@ -70,7 +70,7 @@
             lbl_status.Location = new Point(114, 60);
             lbl_status.Margin = new Padding(4, 0, 4, 0);
             lbl_status.Name = "lbl_status";
-            lbl_status.Size = new Size(91, 21);
+            lbl_status.Size = new Size(115, 28);
             lbl_status.TabIndex = 3;
             lbl_status.Text = "placeholder";
             // 
@@ -102,7 +102,7 @@
             tbx_port.Location = new Point(598, 21);
             tbx_port.Margin = new Padding(4);
             tbx_port.Name = "tbx_port";
-            tbx_port.Size = new Size(127, 29);
+            tbx_port.Size = new Size(127, 34);
             tbx_port.TabIndex = 6;
             // 
             // btn_connect_port
@@ -130,20 +130,20 @@
             rtb_mining.Name = "rtb_mining";
             rtb_mining.Size = new Size(393, 441);
             rtb_mining.TabIndex = 9;
-            rtb_mining.Text = "Mining (every 50000th hash)...";
+            rtb_mining.Text = "Mining (every 100 000th hash)...";
             // 
             // lbl_client
             // 
             lbl_client.AutoSize = true;
             lbl_client.Location = new Point(600, 65);
             lbl_client.Name = "lbl_client";
-            lbl_client.Size = new Size(111, 21);
+            lbl_client.Size = new Size(142, 28);
             lbl_client.TabIndex = 10;
             lbl_client.Text = "Not connected";
             // 
             // NetChainer
             // 
-            AutoScaleDimensions = new SizeF(9F, 21F);
+            AutoScaleDimensions = new SizeF(11F, 28F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(885, 566);
             Controls.Add(lbl_client);

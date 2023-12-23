@@ -9,6 +9,7 @@ namespace Blockchain {
         }
 
         private static readonly uint STD_DATA_SIZE = 1024 * 1024;
+        private static readonly uint INIT_DIFF = 3;
         private Socket serverSocket;
         private Socket connectToServerSocket;
         private List<Socket> connectedClients = new List<Socket>();
@@ -54,9 +55,6 @@ namespace Blockchain {
             serverSocket.Close();
         }
 
-
-
-
         private async Task HandleClients(Socket client) {
             while(true) {
                 try {
@@ -70,6 +68,20 @@ namespace Blockchain {
                             client.Close();
                             connectedClients.Remove(client);
                             return;
+                        case "#B":
+                            //MessageBox.Show("Starting blockchain transfer...")
+                            var blockCount = Convert.ToInt32(data[1]);
+                            if(blockCount < blockchain.Blocks.Count) {
+                                await Send(client, Encoding.UTF8.GetBytes("SHORTER"));
+                                return;
+                            }
+                            await Send(client, Encoding.UTF8.GetBytes("OK"));
+
+                            await TransferBlocks(client, blockCount);
+
+                            //MessageBox.Show("All blocks received");
+
+                            break;
                     }
 
 
@@ -78,16 +90,38 @@ namespace Blockchain {
                     break;
                 }
             }
-
-            //try {
-            //    client.Shutdown(SocketShutdown.Both);
-            //    client.Close();
-            //} catch(Exception ex) {
-            //    MessageBox.Show($"{ex.Message}\n{ex.StackTrace}");
-            //}
         }
 
+        private async Task TransferBlocks(Socket client, int blockCount) {
+            for(int i = 0; i < blockCount; i++) {
+                try {
+                    var blockData = Encoding.UTF8.GetString(await Receive(client)).Split('|');
+                    var block = new Block(
+                        index: Convert.ToInt32(blockData[0]),
+                        data: Encoding.UTF8.GetBytes(blockData[1]),
+                        timestamp: Convert.ToDateTime(blockData[2]),
+                        previousHash: Utils.GetByteArrayFromHexString(blockData[3]),
+                        difficulty: Convert.ToUInt32(blockData[4]),
+                        nonce: Convert.ToUInt32(blockData[5]),
+                        miner: blockData[6],
+                        hash: Utils.GetByteArrayFromHexString(blockData[7])
+                    );
+                    blockchain.AddBlock(block);
+                    blockchain.ValidateChain();
 
+                    //MessageBox.Show(block.ToString());
+                } catch(Exception ex) {
+                    MessageBox.Show($"{ex.Message}\n{ex.StackTrace}");
+                    break;
+                }
+                await Send(client, Encoding.UTF8.GetBytes("OK"));
+            }
+            Invoke((MethodInvoker)delegate {
+                foreach(var block in blockchain.Blocks) {
+                    AppendText(rtb_ledger, $"\n{block}\n", Color.Green);
+                }
+            });
+        }
 
         private static int GetAvailablePort() {
             var temp = new TcpListener(IPAddress.Loopback, 0);
@@ -146,8 +180,10 @@ namespace Blockchain {
             try {
                 await Task.Run(async () => {
                     await connectToServerSocket.ConnectAsync(ipEndPoint);
-
-                    _ = ListenForMessages(connectToServerSocket);
+                    Invoke((MethodInvoker)delegate {
+                        lbl_client.Text = lbl_client.Text == "Not connected" ? "1" : (Convert.ToInt32(lbl_client.Text) + 1).ToString();
+                    });
+                    //_ = ListenForMessages(connectToServerSocket);
                 });
             } catch(Exception ex) {
                 MessageBox.Show($"{ex.Message}\n{ex.StackTrace}");
@@ -157,14 +193,16 @@ namespace Blockchain {
         private async Task ListenForMessages(Socket socket) {
             try {
                 while(socket.Connected) {
-                    //TODO implemnt logic
-                    break;
+                    var response = Encoding.UTF8.GetString(await Receive(socket));
+                    if(response != "OK") {
+                        MessageBox.Show("Something went wrong...");
+                        return;
+                    }
+                    //MessageBox.Show(Encoding.UTF8.GetString(response));
                 }
             } catch(Exception ex) {
                 MessageBox.Show($"{ex.Message}\n{ex.StackTrace}");
             }
-
-
         }
 
         private async Task<int> Send(Socket socket, byte[] data) {
@@ -189,10 +227,10 @@ namespace Blockchain {
             await Task.Run(() => MineBlock());
         }
 
-        private void MineBlock() {
+        private async void MineBlock() {
             uint nonce = 0;
             uint check = 100_000;
-            uint diff = 2;
+            uint diff = INIT_DIFF;
             int i = 0;
             var data = "Test dummy data";
             bool skip;
@@ -241,20 +279,56 @@ namespace Blockchain {
                 } else if(elapsedTime.TotalSeconds > 5) {
                     diff--;
                 }
-                MessageBox.Show($"Diff: {diff}");
+                //MessageBox.Show($"Diff: {diff}");
 
                 blockchain.Blocks.Add(block);
+                blockchain.CalculateCumulativeDifficulty();
                 AppendText(rtb_ledger, $"\n{block}\n", Color.Green);
 
-                if(blockchain.Blocks.Count == 10)
-                    break;
+                await SendBlockChainToAll();
 
                 nonce = 0;
                 startTime = DateTime.Now;
             }
         }
 
-        public void AppendText(RichTextBox box, string text, Color color) {
+        private async Task SendBlockChainToAll() {
+            foreach(var socket in serversConnectedTo) {
+                await Task.Run(async () => await SendBlockChainSingle(socket));
+            }
+        }
+
+        private async Task SendBlockChainSingle(Socket socket) {
+            await Send(socket, Encoding.UTF8.GetBytes($"#B|{blockchain.Blocks.Count}|{blockchain.Difficulty}"));
+            var response = Encoding.UTF8.GetString(await Receive(socket));
+
+            switch(response) {
+                case "SHORTER":
+                    return;
+                case "OK":
+                    break;
+                default:
+                    MessageBox.Show("Error transfering blockchain");
+                    return;
+            }
+
+            foreach(var block in blockchain.Blocks) {
+                await Send(socket, block.ToTransferByte());
+                response = Encoding.UTF8.GetString(await Receive(socket));
+
+                switch(response) {
+                    case "OK":
+                        break;
+                    default:
+                        MessageBox.Show($"Error transfering block {block.Index}");
+                        return;
+                }
+            }
+
+            MessageBox.Show("All blocks transfered");
+        }
+
+        private void AppendText(RichTextBox box, string text, Color color) {
             this.Invoke((MethodInvoker)delegate {
                 box.SelectionStart = box.TextLength;
                 box.SelectionLength = 0;
