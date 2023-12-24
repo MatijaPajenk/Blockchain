@@ -49,7 +49,7 @@
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new Point(53, 60);
+            label2.Location = new Point(63, 62);
             label2.Margin = new Padding(4, 0, 4, 0);
             label2.Name = "label2";
             label2.Size = new Size(69, 28);
@@ -58,7 +58,7 @@
             // 
             // tbx_node_name
             // 
-            tbx_node_name.Location = new Point(114, 22);
+            tbx_node_name.Location = new Point(130, 24);
             tbx_node_name.Margin = new Padding(4);
             tbx_node_name.Name = "tbx_node_name";
             tbx_node_name.Size = new Size(127, 34);
@@ -67,7 +67,7 @@
             // lbl_status
             // 
             lbl_status.AutoSize = true;
-            lbl_status.Location = new Point(114, 60);
+            lbl_status.Location = new Point(130, 62);
             lbl_status.Margin = new Padding(4, 0, 4, 0);
             lbl_status.Name = "lbl_status";
             lbl_status.Size = new Size(115, 28);
@@ -80,22 +80,22 @@
             btn_connect_network.Location = new Point(280, 21);
             btn_connect_network.Margin = new Padding(4);
             btn_connect_network.Name = "btn_connect_network";
-            btn_connect_network.Size = new Size(96, 32);
+            btn_connect_network.Size = new Size(106, 37);
             btn_connect_network.TabIndex = 4;
             btn_connect_network.Text = "Connect";
             btn_connect_network.UseVisualStyleBackColor = false;
-            btn_connect_network.Click += btn_connect_network_Click;
+            btn_connect_network.Click += Btn_connect_network_Click;
             // 
             // btn_mine
             // 
             btn_mine.Location = new Point(394, 21);
             btn_mine.Margin = new Padding(4);
             btn_mine.Name = "btn_mine";
-            btn_mine.Size = new Size(96, 32);
+            btn_mine.Size = new Size(100, 37);
             btn_mine.TabIndex = 5;
             btn_mine.Text = "Mine";
             btn_mine.UseVisualStyleBackColor = true;
-            btn_mine.Click += btn_mine_Click;
+            btn_mine.Click += Btn_mine_Click;
             // 
             // tbx_port
             // 
@@ -110,11 +110,11 @@
             btn_connect_port.Location = new Point(733, 19);
             btn_connect_port.Margin = new Padding(4);
             btn_connect_port.Name = "btn_connect_port";
-            btn_connect_port.Size = new Size(122, 32);
+            btn_connect_port.Size = new Size(122, 36);
             btn_connect_port.TabIndex = 7;
             btn_connect_port.Text = "Connect port";
             btn_connect_port.UseVisualStyleBackColor = true;
-            btn_connect_port.Click += btn_connect_port_Click;
+            btn_connect_port.Click += Btn_connect_port_Click;
             // 
             // rtb_ledger
             // 
@@ -145,7 +145,7 @@
             // 
             AutoScaleDimensions = new SizeF(11F, 28F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(885, 566);
+            ClientSize = new Size(882, 563);
             Controls.Add(lbl_client);
             Controls.Add(rtb_mining);
             Controls.Add(rtb_ledger);
@@ -159,6 +159,8 @@
             Controls.Add(label1);
             Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
             Margin = new Padding(4);
+            MaximumSize = new Size(900, 610);
+            MinimumSize = new Size(900, 610);
             Name = "NetChainer";
             Text = "NetChainer";
             FormClosing += Form1_FormClosing;

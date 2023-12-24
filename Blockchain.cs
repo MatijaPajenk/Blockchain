@@ -1,10 +1,12 @@
 ﻿namespace Blockchain {
-    internal class Blockchain(string name) {
+    internal class Blockchain(string name = "") {
         public string Name { get; set; } = name;
         public uint Difficulty { get; set; }
         public List<Block> Blocks { get; set; } = [];
 
         public void AddBlock(Block block) {
+            if(Blocks.Count > 0 && block.Index < Blocks.Last().Index)
+                block.Index = Blocks.Last().Index + 1;
             Blocks.Add(block);
         }
 
