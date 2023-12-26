@@ -16,6 +16,10 @@ namespace Blockchain {
             return Encoding.UTF8.GetString(Data);
         }
 
+        public byte[] BlockToHashData() {
+            return Encoding.UTF8.GetBytes($"{Index}{Timestamp}{Data}{PreviousHash}{Difficulty}{Nonce}");
+        }
+
         public override string ToString() {
             var res =
                 $"""

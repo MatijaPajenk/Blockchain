@@ -12,13 +12,16 @@ namespace Blockchain {
         }
 
         private static readonly uint STD_DATA_SIZE = 1024 * 1024;
-        private static readonly uint INIT_DIFF = 3;
         private Socket serverSocket;
         private Socket connectToServerSocket;
         private readonly List<Socket> connectedClients = [];
         private readonly List<Socket> serversConnectedTo = [];
         private Blockchain blockchain;
         private bool end = false;
+        private static uint DIFF = 2;
+        private static readonly int DIFF_INTERVAL = 2;
+        private static readonly TimeSpan BLOCK_GEN_INTERVAL = TimeSpan.FromSeconds(10);
+        //private static byte[] previousHash = [];
 
         private async void Btn_connect_network_Click(object sender, EventArgs e) {
             if(tbx_node_name.Text.Length == 0) {
@@ -39,6 +42,7 @@ namespace Blockchain {
             }
 
             btn_connect_network.Enabled = false;
+            tbx_node_name.ReadOnly = true;
             lbl_status.Text = $"Online: PORT {serverSocket?.LocalEndPoint?.ToString()?.Split(':')[1]}";
             //MessageBox.Show($"local: {hostSocket?.LocalEndPoint}");
 
@@ -47,8 +51,9 @@ namespace Blockchain {
             while(!end) {
                 try {
                     var client = await serverSocket!.AcceptAsync();
+
                     connectedClients.Add(client);
-                    //MessageBox.Show($"Client connected: {client.LocalEndPoint
+                    //MessageBox.Show($"Client connected: {client.LocalEndPoint}");
                     AppendText(rtb_mining, $"\nClient connected: {client.RemoteEndPoint}\n", Color.Green);
                     _ = HandleClients(client);
                 } catch(Exception ex) {
@@ -62,22 +67,28 @@ namespace Blockchain {
         private async Task HandleClients(Socket client) {
             while(!end) {
                 try {
-                    //TODO implement logic
                     var message = Encoding.UTF8.GetString(await Receive(client));
                     var data = message.Split('|');
                     switch(data[0]) {
-                        case "#D":
+                        case "#DS":
                             AppendText(rtb_mining, $"\nClient disconnected: {client.RemoteEndPoint}\n", Color.Goldenrod);
                             await Send(client, Encoding.UTF8.GetBytes("OK"));
                             client.Close();
                             connectedClients.Remove(client);
+                            //Invoke((MethodInvoker)delegate {
+                            //    lbl_client.Text = (Convert.ToInt32(lbl_client.Text) - 1).ToString();
+                            //});
                             return;
                         case "#BC":
                             //MessageBox.Show("Starting blockchain transfer...")
                             var blockCount = Convert.ToInt32(data[1]);
-                            if(blockCount < blockchain.Blocks.Count) {
-                                await Send(client, Encoding.UTF8.GetBytes("SHORTER"));
-                                return;
+                            //if(blockCount < blockchain.Blocks.Count) {
+                            //    await Send(client, Encoding.UTF8.GetBytes("SHORTER"));
+                            //    return;
+                            //}
+                            if(blockchain.Blocks.Count > 0 && blockchain.Difficulty > Convert.ToUInt32(data[2])) {
+                                await Send(client, Encoding.UTF8.GetBytes("BETTER"));
+                                break;
                             }
                             await Send(client, Encoding.UTF8.GetBytes("OK"));
 
@@ -89,6 +100,10 @@ namespace Blockchain {
                         case "#B":
                             await Send(client, Encoding.UTF8.GetBytes("OK"));
                             await TransferBlock(client);
+                            break;
+                        case "#DIFF":
+                            DIFF = Convert.ToUInt32(data[1]);
+                            await Send(client, Encoding.UTF8.GetBytes("OK"));
                             break;
                     }
 
@@ -114,6 +129,13 @@ namespace Blockchain {
         private async Task TransferBlock(Socket client) {
             try {
                 var blockData = Encoding.UTF8.GetString(await Receive(client)).Split('|');
+
+                var timestamp = Convert.ToDateTime(blockData[2]);
+                if(DateTime.Now.Subtract(timestamp).TotalSeconds > 60) {
+                    MessageBox.Show("Block is invalid because it was created more than 1 minute ago");
+                    return;
+                }
+
                 var block = new Block(
                     index: Convert.ToInt32(blockData[0]),
                     data: Encoding.UTF8.GetBytes(blockData[1]),
@@ -124,8 +146,10 @@ namespace Blockchain {
                     miner: blockData[6],
                     hash: Utils.GetByteArrayFromHexString(blockData[7])
                 );
+                //previousHash = Utils.GetByteArrayFromHexString(blockData[3]);
                 blockchain.AddBlock(block);
                 blockchain.ValidateChain();
+                blockchain.CalculateCumulativeDifficulty();
 
                 Invoke((MethodInvoker)delegate {
                     AppendText(rtb_ledger, $"\n{block}\n", Color.Green);
@@ -155,7 +179,7 @@ namespace Blockchain {
 
             foreach(var server in serversConnectedTo) {
                 try {
-                    await Send(server, Encoding.UTF8.GetBytes("#D"));
+                    await Send(server, Encoding.UTF8.GetBytes("#DS"));
                     var response = Encoding.UTF8.GetString(await Receive(server));
 
                     if(response != "OK") {
@@ -163,16 +187,28 @@ namespace Blockchain {
                         return;
                     }
 
-                    if(server is not null && server.Connected) {
-                        try {
-                            //server.Shutdown(SocketShutdown.Both);
-                            server.Close();
-                        } catch(Exception ex) {
-                            MessageBox.Show($"{ex.Message}\n{ex.StackTrace}");
-                        }
-                    }
+                    //if(socket is not null && socket.Connected) {
+                    //    try {
+                    //        //server.Shutdown(SocketShutdown.Both);
+                    //        socket.Close();
+                    //    } catch(Exception ex) {
+                    //        MessageBox.Show($"{ex.Message}\n{ex.StackTrace}");
+                    //    }
+                    //}
                 } catch { continue; }
             }
+
+            //foreach(var client in connectedClients) {
+            //    try {
+            //        await Send(client, Encoding.UTF8.GetBytes("#DC"));
+            //        var response = Encoding.UTF8.GetString(await Receive(client));
+
+            //        if(response != "OK") {
+            //            MessageBox.Show("Remote client not disconnected correctly");
+            //            return;
+            //        }
+            //    } catch { continue; }
+            //}
 
             serverSocket.Close();
         }
@@ -188,18 +224,31 @@ namespace Blockchain {
             }
 
             var ipEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), Convert.ToInt32(tbx_port.Text));
+
+            if(ipEndPoint.Port.ToString() == serverSocket?.LocalEndPoint?.ToString()?.Split(':')[1]) {
+                MessageBox.Show("Can't connect to itself");
+                return;
+            }
+
             connectToServerSocket = new Socket(new IPEndPoint(IPAddress.Parse("127.0.0.1"), GetAvailablePort()).AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
             if(serversConnectedTo.Contains(connectToServerSocket)) {
                 MessageBox.Show($"Already connected to 127.0.0.1:{tbx_port.Text}");
                 return;
             }
-            serversConnectedTo.Add(connectToServerSocket);
             try {
                 await Task.Run(async () => {
-                    await connectToServerSocket.ConnectAsync(ipEndPoint);
+                    try {
+                        await connectToServerSocket.ConnectAsync(ipEndPoint);
+                        serversConnectedTo.Add(connectToServerSocket);
+
+                    } catch {
+                        MessageBox.Show("Invalid address");
+                        return;
+                    }
                     Invoke((MethodInvoker)delegate {
-                        lbl_client.Text = lbl_client.Text == "Not connected" ? "1" : (Convert.ToInt32(lbl_client.Text) + 1).ToString();
+                        //lbl_client.Text = lbl_client.Text == "Not connected" ? "1" : (Convert.ToInt32(lbl_client.Text) + 1).ToString();
+                        AppendText(rtb_mining, $"\nConnected to: {ipEndPoint}\n", Color.Green);
                     });
 
                     if(blockchain.Blocks.Count > 0) {
@@ -252,22 +301,21 @@ namespace Blockchain {
         private async void MineBlock() {
             uint nonce = 0;
             uint check = 100_000;
-            uint diff = INIT_DIFF;
+            //uint diff = INIT_DIFF;
             int i = 0;
             var data = "Test dummy data";
             bool skip;
-            var startTime = DateTime.Now;
-            var previousHash = Array.Empty<byte>();
+            var previousHash = blockchain.Blocks.Count > 0 ? blockchain.Blocks[^1].Hash : [];
             while(!end) {
                 i++;
                 nonce++;
                 skip = false;
                 var timestamp = DateTime.Now;
-                var strData = $"{blockchain.Blocks.Count}{timestamp}{data}{previousHash}{diff}{nonce}";
+                var strData = $"{blockchain.Blocks.Count}{timestamp}{data}{previousHash}{DIFF}{nonce}";
                 var byteData = Encoding.UTF8.GetBytes(strData);
                 var hash = Utils.ComputeHash(byteData);
 
-                for(int k = 0; k < diff; k++) {
+                for(int k = 0; k < DIFF; k++) {
                     if(hash[k] != 0) {
                         skip = true;
                         break;
@@ -284,10 +332,9 @@ namespace Blockchain {
                 if(skip)
                     continue;
 
-                var elapsedTime = DateTime.Now - startTime;
-
                 if(end)
                     return;
+
                 AppendText(rtb_mining, $"\n{Utils.GetHexString(hash)}\n", Color.Green);
                 var block = new Block(
                     index: blockchain.Blocks.Count,
@@ -295,19 +342,23 @@ namespace Blockchain {
                     data: Encoding.UTF8.GetBytes(data),
                     hash: hash,
                     previousHash: previousHash,
-                    difficulty: diff,
+                    difficulty: DIFF,
                     nonce: nonce,
                     miner: blockchain.Name);
 
-                if(elapsedTime.TotalSeconds < 1) {
-                    diff++;
-                } else if(elapsedTime.TotalSeconds > 5) {
-                    diff--;
-                }
+                AdjustDiff();
+                //if(elapsedTime.TotalSeconds < 1) {
+                //    DIFF++;
+                //} else if(elapsedTime.TotalSeconds > 5) {
+                //    DIFF--;
+                //}
                 //MessageBox.Show($"Diff: {diff}");
 
-                blockchain.Blocks.Add(block);
+                // previousHash = hash;
+                blockchain.AddBlock(block);
+                blockchain.ValidateChain();
                 blockchain.CalculateCumulativeDifficulty();
+
                 if(end)
                     return;
                 AppendText(rtb_ledger, $"\n{block}\n", Color.Green);
@@ -317,7 +368,36 @@ namespace Blockchain {
 
                 previousHash = hash;
                 nonce = 0;
-                startTime = DateTime.Now;
+            }
+        }
+
+        private async void AdjustDiff() {
+            if(blockchain.Blocks.Count < DIFF_INTERVAL)
+                return;
+            var prevAdjustmentBlock = blockchain.Blocks[^DIFF_INTERVAL];
+            var timeExpected = BLOCK_GEN_INTERVAL.Multiply(DIFF_INTERVAL);
+            var timeTaken = blockchain.Blocks[^1].Timestamp.Subtract(prevAdjustmentBlock.Timestamp);
+
+            if(timeTaken < (timeExpected.Divide(2))) {
+                DIFF = prevAdjustmentBlock.Difficulty + 1;
+            } else if(timeTaken > (timeExpected.Multiply(2))) {
+                DIFF = prevAdjustmentBlock.Difficulty - 1;
+            } else { return; }
+
+            MessageBox.Show($"Diff: {DIFF}");
+            await SendDiffToAll(DIFF);
+        }
+
+        private async Task SendDiffToAll(uint diff) {
+            foreach(var socket in serversConnectedTo) {
+                await Task.Run(async () => {
+                    await Send(socket, Encoding.UTF8.GetBytes($"#DIFF|{diff}"));
+                    var response = Encoding.UTF8.GetString(await Receive(socket));
+                    if(response != "OK") {
+                        MessageBox.Show("Error adjusting diff on network");
+                        return;
+                    }
+                });
             }
         }
 
@@ -359,6 +439,8 @@ namespace Blockchain {
                     return;
                 case "OK":
                     break;
+                case "BETTER":
+                    return;
                 default:
                     MessageBox.Show("Error transfering blockchain");
                     return;

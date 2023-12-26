@@ -120,6 +120,7 @@
             // 
             rtb_ledger.Location = new Point(27, 103);
             rtb_ledger.Name = "rtb_ledger";
+            rtb_ledger.ReadOnly = true;
             rtb_ledger.Size = new Size(410, 441);
             rtb_ledger.TabIndex = 8;
             rtb_ledger.Text = "Blockchain ledger...";
@@ -128,6 +129,7 @@
             // 
             rtb_mining.Location = new Point(462, 103);
             rtb_mining.Name = "rtb_mining";
+            rtb_mining.ReadOnly = true;
             rtb_mining.Size = new Size(393, 441);
             rtb_mining.TabIndex = 9;
             rtb_mining.Text = "Mining (every 100 000th hash)...";
@@ -140,6 +142,7 @@
             lbl_client.Size = new Size(142, 28);
             lbl_client.TabIndex = 10;
             lbl_client.Text = "Not connected";
+            lbl_client.Visible = false;
             // 
             // NetChainer
             // 
