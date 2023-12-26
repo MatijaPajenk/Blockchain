@@ -21,7 +21,6 @@ namespace Blockchain {
         private static uint DIFF = 2;
         private static readonly int DIFF_INTERVAL = 2;
         private static readonly TimeSpan BLOCK_GEN_INTERVAL = TimeSpan.FromSeconds(10);
-        //private static byte[] previousHash = [];
 
         private async void Btn_connect_network_Click(object sender, EventArgs e) {
             if(tbx_node_name.Text.Length == 0) {
@@ -136,6 +135,11 @@ namespace Blockchain {
                     return;
                 }
 
+                // TODO FUCK IT IDK, REJECT IF LOW
+                if(Convert.ToUInt32(blockData[4]) < DIFF) {
+                    return;
+                }
+
                 var block = new Block(
                     index: Convert.ToInt32(blockData[0]),
                     data: Encoding.UTF8.GetBytes(blockData[1]),
@@ -148,7 +152,7 @@ namespace Blockchain {
                 );
                 //previousHash = Utils.GetByteArrayFromHexString(blockData[3]);
                 blockchain.AddBlock(block);
-                blockchain.ValidateChain();
+                //blockchain.ValidateChain();
                 blockchain.CalculateCumulativeDifficulty();
 
                 Invoke((MethodInvoker)delegate {
@@ -305,7 +309,7 @@ namespace Blockchain {
             int i = 0;
             var data = "Test dummy data";
             bool skip;
-            var previousHash = blockchain.Blocks.Count > 0 ? blockchain.Blocks[^1].Hash : [];
+            var previousHash = blockchain.Blocks.Count > 0 ? blockchain.Blocks.Last().Hash : [];
             while(!end) {
                 i++;
                 nonce++;
@@ -384,7 +388,7 @@ namespace Blockchain {
                 DIFF = prevAdjustmentBlock.Difficulty - 1;
             } else { return; }
 
-            MessageBox.Show($"Diff: {DIFF}");
+            //MessageBox.Show($"Diff: {DIFF}");
             await SendDiffToAll(DIFF);
         }
 

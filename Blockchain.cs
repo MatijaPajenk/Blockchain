@@ -5,15 +5,17 @@
         public List<Block> Blocks { get; set; } = [];
 
         public void AddBlock(Block block) {
-            if(Blocks.Count > 0 && Blocks[^1].Timestamp.Subtract(block.Timestamp).TotalSeconds > 60) {
+            if(Blocks.Count != 0 && Blocks.Last().Timestamp.Subtract(block.Timestamp).TotalSeconds > 60) {
                 MessageBox.Show("Block was not added to blockchain.\nReject reason: created more than 1 minute earlier than the previous block");
                 return;
             }
 
 
-            if(Blocks.Count > 0 && block.Index < Blocks.Last().Index)
+            if(Blocks.Count != 0 && block.Index < Blocks.Last().Index)
                 block.Index = Blocks.Last().Index + 1;
+
             Blocks.Add(block);
+            ValidateChain();
         }
 
         public void CalculateCumulativeDifficulty() {
